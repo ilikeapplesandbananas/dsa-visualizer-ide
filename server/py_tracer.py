@@ -595,6 +595,7 @@ def run_trace_mode(payload):
 
         return trace_fn
 
+    prev_rec_limit = sys.getrecursionlimit()
     sys.setrecursionlimit(300)
 
     try:
@@ -639,6 +640,7 @@ def run_trace_mode(payload):
         error_msg = f"{type(e).__name__}: {e}"
     finally:
         sys.settrace(None)
+        sys.setrecursionlimit(prev_rec_limit)
         sys.stdout = old_stdout
         stdout_cap.flush()
 
@@ -694,6 +696,7 @@ def run_tests_mode(payload):
                 return guard_trace
             return None
 
+        prev_rec_limit = sys.getrecursionlimit()
         try:
             sys.setrecursionlimit(300)
             sys.settrace(guard_trace)
@@ -707,6 +710,7 @@ def run_tests_mode(payload):
             err = f"{type(e).__name__}: {e}"
         finally:
             sys.settrace(None)
+            sys.setrecursionlimit(prev_rec_limit)
             sys.stdout = old_stdout
             stdout_cap.flush()
 
@@ -758,6 +762,7 @@ def run_tests_mode(payload):
                 return guard_trace
             return None
 
+        prev_rec_limit = sys.getrecursionlimit()
         try:
             sys.setrecursionlimit(300)
             exec(compiled, ns)
@@ -791,6 +796,7 @@ def run_tests_mode(payload):
             err = f"{type(e).__name__}: {e}"
         finally:
             sys.settrace(None)
+            sys.setrecursionlimit(prev_rec_limit)
             sys.stdout = old_stdout
             stdout_cap.flush()
 

@@ -1,8 +1,12 @@
 # trace (AlgoLens) — DSA & LeetCode Execution Visualizer IDE
 
+**Live Website:** **https://ilikeapplesandbananas.github.io/dsa-visualizer-ide/**
+
 An interactive, dual-surface coding IDE and step-by-step algorithm visualizer for LeetCode-style data structures & algorithms interview preparation across **6 programming languages** (`Python 3`, `JavaScript`, `Java`, `C++`, `C`, and `C#`) and **38 curated problems & sandboxes**.
 
 Write your own solution or inspect clean optimal implementations, execute against sample/custom/hidden test cases, and scrub line-by-line through live synchronized animations of arrays, pointers, hash maps, trees, graphs/grids, heaps, stacks/queues, linked lists, intervals, and dynamic programming states—paired with mathematical callouts and a plain-English **"WHY THIS WORKS"** intuition card at every step.
+
+> **100% Static Web + Local Full-Stack Support:** On GitHub Pages, all **6 languages** execute directly inside your browser (JavaScript in a sandboxed Web Worker, Python 3 via **Pyodide WebAssembly**, and Java / C++ / C / C# via **web-tree-sitter WASM**). Locally (`npm run dev` / `npm start`), the UI seamlessly uses the Express backend when available.
 
 ---
 
@@ -37,8 +41,8 @@ Every supported language is genuinely executed and traced step-by-step (no hardc
 | Language | Execution & Trace Strategy | Location |
 | --- | --- | --- |
 | **JavaScript** | Client-side sandboxed **Web Worker** using `acorn` AST parsing and `astring` code generation to instrument every statement, loop, branch, function call, and return. | [`src/engine/jsInstrumenter.ts`](src/engine/jsInstrumenter.ts), [`src/engine/jsRunner.ts`](src/engine/jsRunner.ts), [`src/engine/jsWorker.ts`](src/engine/jsWorker.ts) |
-| **Python 3** | Server-side isolated Python subprocess (`python -I` / `python3 -I`) using `sys.settrace` to capture frame-by-frame line execution, call stack depth, locals, heap objects (`ListNode`, `TreeNode`, `Node`, `deque`, `heapq`), and `stdout`. | [`server/pyRunner.ts`](server/pyRunner.ts), [`server/py_tracer.py`](server/py_tracer.py) |
-| **Java, C++, C, C#** | Server-side WASM CST parsing via `web-tree-sitter` + `tree-sitter-wasms` (`tree-sitter-java`, `tree-sitter-cpp`, `tree-sitter-c`, `tree-sitter-c_sharp`), lowered into sandboxed instrumented JS backed by typed runtime containers (`AlgoDeque`, `AlgoMap`, `AlgoSet`, `TrackedHeap`, `RefBox`, pointers). | [`server/treeSitterRunner.ts`](server/treeSitterRunner.ts), [`server/langRuntime.ts`](server/langRuntime.ts) |
+| **Python 3** | Server-side isolated Python subprocess (`python -I` / `python3 -I`) OR automatic in-browser **Pyodide (CPython WebAssembly)** runtime when hosted statically, using `sys.settrace` to capture frames, locals, heap objects (`ListNode`, `TreeNode`, `Node`, `deque`, `heapq`), and `stdout`. | [`src/engine/browserPythonRunner.ts`](src/engine/browserPythonRunner.ts), [`server/pyRunner.ts`](server/pyRunner.ts), [`server/py_tracer.py`](server/py_tracer.py) |
+| **Java, C++, C, C#** | Isomorphic WASM CST parsing via `web-tree-sitter` + `tree-sitter-wasms` (`tree-sitter-java`, `tree-sitter-cpp`, `tree-sitter-c`, `tree-sitter-c_sharp`) loaded locally on Node or from `public/wasm/` in browser, lowered into sandboxed instrumented JS with typed containers (`AlgoDeque`, `AlgoMap`, `AlgoSet`, `TrackedHeap`, `RefBox`, pointers). | [`src/engine/treeSitterCore.ts`](src/engine/treeSitterCore.ts), [`src/engine/browserLangRunner.ts`](src/engine/browserLangRunner.ts), [`src/engine/langRuntime.ts`](src/engine/langRuntime.ts), [`server/treeSitterRunner.ts`](server/treeSitterRunner.ts) |
 
 ---
 
@@ -105,12 +109,14 @@ dsa-visualizer-ide/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
+├── public/
+│   └── wasm/                     # Tree-sitter runtime & Java/C++/C/C# WASM binaries for GitHub Pages
 ├── server/
 │   ├── index.ts                  # Express API + production static server (port 3001)
 │   ├── pyRunner.ts               # Spawns isolated python process for trace/tests
 │   ├── py_tracer.py              # Python sys.settrace tracer & LeetCode test harness
-│   ├── treeSitterRunner.ts       # Java/C++/C/C# tree-sitter WASM lowerer & executor
-│   └── langRuntime.ts            # Multi-language tracked containers & pointer runtime
+│   ├── treeSitterRunner.ts       # Node WASM loader delegating to isomorphic treeSitterCore
+│   └── langRuntime.ts            # Re-export barrel for shared multi-language container runtime
 └── src/
     ├── App.tsx                   # Resizable 2-surface layout, execution state & hotkeys
     ├── index.css                 # Tailwind v4 theme tokens & custom Monaco/slider styles
@@ -122,14 +128,18 @@ dsa-visualizer-ide/
     │   ├── problems.ts           # Unified export of all 38 problems & lookup helper
     │   └── problemsPart1..4.ts   # Problem definitions, 6-language templates & test cases
     ├── engine/
+    │   ├── browserLangRunner.ts  # Client-side Java/C++/C/C# WASM execution runner
+    │   ├── browserPythonRunner.ts# Client-side Pyodide WebAssembly Python runner
     │   ├── dataConverters.ts     # ListNode, TreeNode, GraphNode, AlgoHeap & comparators
     │   ├── inputPreview.ts       # Static pre-run structure previews before clicking Visualize
     │   ├── jsInstrumenter.ts     # Acorn AST instrumenter for JavaScript tracing
     │   ├── jsRunner.ts           # Instrumented JS trace & test suite runner
     │   ├── jsWorker.ts           # Dedicated browser Web Worker for JS execution
-    │   ├── pythonClient.ts       # Unified execution dispatcher across all 6 languages
+    │   ├── langRuntime.ts        # Shared multi-language tracked containers & pointer runtime
+    │   ├── pythonClient.ts       # Hybrid dispatcher (local Express API or in-browser engines)
     │   ├── stepNarrator.ts       # Pedagogical headlines, formulas & WHY THIS WORKS generator
-    │   └── structureDetector.ts  # Infers arrays, trees, graphs, heaps, matrices & maps
+    │   ├── structureDetector.ts  # Infers arrays, trees, graphs, heaps, matrices & maps
+    │   └── treeSitterCore.ts     # Isomorphic Java/C++/C/C# CST lowerer & executor
     ├── components/
     │   ├── Header.tsx            # Top nav bar, problem switcher, Run Tests & Visualize CTA
     │   ├── CodeEditorPanel.tsx   # Monaco editor, language selector & Problem details sheet

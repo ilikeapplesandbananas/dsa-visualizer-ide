@@ -8,6 +8,7 @@
     "dev:ui": "vite",
     "dev:server": "tsx watch server/index.ts",
     "build": "vite build",
+    "build:pages": "vite build --base=/dsa-visualizer-ide/",
     "preview": "vite preview",
     "start": "tsx server/index.ts",
     "test": "vitest run",

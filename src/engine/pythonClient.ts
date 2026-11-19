@@ -14,51 +14,68 @@ export interface PythonRunRequest {
   maxSteps?: number;
 }
 
-export async function runPythonTrace(req: Omit<PythonRunRequest, 'mode'>): Promise<ExecutionTrace> {
-  try {
-    const res = await fetch('/api/python/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...req, mode: 'trace' }),
-    });
-    if (!res.ok) {
-      throw new Error(`Python server responded with HTTP ${res.status}`);
-    }
-    return (await res.json()) as ExecutionTrace;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Could not reach Python execution server.';
-    return {
-      steps: [],
-      finalOutput: null,
-      stdout: [],
-      error: `${msg} Make sure the AlgoLens API server is running (npm run dev).`,
-      runtimeMs: 0,
-    };
+let backendAvailablePromise: Promise<boolean> | null = null;
+
+/** Probes once whether the local Express API server is present; static hosts use WASM/Pyodide directly. */
+async function hasBackendApi(): Promise<boolean> {
+  if (typeof window === 'undefined') return true;
+  if (window.location.hostname.endsWith('github.io')) return false;
+
+  if (!backendAvailablePromise) {
+    backendAvailablePromise = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 900);
+      try {
+        const res = await fetch('/api/health', { signal: controller.signal });
+        const ct = res.headers.get('content-type') || '';
+        if (!res.ok || !ct.includes('application/json')) return false;
+        const data = (await res.json()) as { ok?: boolean };
+        return data.ok === true;
+      } catch {
+        return false;
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
   }
+  return backendAvailablePromise;
+}
+
+async function runPythonViaBackendOrBrowser<T>(
+  mode: 'trace' | 'tests',
+  req: Omit<PythonRunRequest, 'mode'>,
+  browserFallback: (r: Omit<PythonRunRequest, 'mode'>) => Promise<T>
+): Promise<T> {
+  if (await hasBackendApi()) {
+    try {
+      const res = await fetch('/api/python/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...req, mode }),
+      });
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        return (await res.json()) as T;
+      }
+    } catch {
+      // Fall back to Pyodide in browser when API becomes unreachable
+    }
+  }
+  return browserFallback(req);
+}
+
+export async function runPythonTrace(req: Omit<PythonRunRequest, 'mode'>): Promise<ExecutionTrace> {
+  return runPythonViaBackendOrBrowser('trace', req, async (r) => {
+    const { runBrowserPythonTrace } = await import('./browserPythonRunner');
+    return runBrowserPythonTrace(r);
+  });
 }
 
 export async function runPythonTests(req: Omit<PythonRunRequest, 'mode'>): Promise<RunTestsResponse> {
-  try {
-    const res = await fetch('/api/python/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...req, mode: 'tests' }),
-    });
-    if (!res.ok) {
-      throw new Error(`Python server responded with HTTP ${res.status}`);
-    }
-    return (await res.json()) as RunTestsResponse;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Could not reach Python execution server.';
-    return {
-      allPassed: false,
-      passedCount: 0,
-      totalCount: req.testCases.length,
-      results: [],
-      totalRuntimeMs: 0,
-      error: `${msg} Make sure the AlgoLens API server is running (npm run dev).`,
-    };
-  }
+  return runPythonViaBackendOrBrowser('tests', req, async (r) => {
+    const { runBrowserPythonTests } = await import('./browserPythonRunner');
+    return runBrowserPythonTests(r);
+  });
 }
 
 // Worker-backed non-blocking JS execution with timeout safeguard so infinite code outside loops can't freeze UI
@@ -165,57 +182,51 @@ export function runJsTestsInWorker(payload: JsTestsPayload, timeoutMs = 4000): P
   });
 }
 
+async function runCompiledViaBackendOrBrowser<T>(
+  language: 'java' | 'cpp' | 'c' | 'csharp',
+  mode: 'trace' | 'tests',
+  req: Omit<PythonRunRequest, 'mode'>,
+  browserFallback: (
+    lang: 'java' | 'cpp' | 'c' | 'csharp',
+    r: Omit<PythonRunRequest, 'mode'>
+  ) => Promise<T>
+): Promise<T> {
+  if (await hasBackendApi()) {
+    try {
+      const res = await fetch('/api/lang/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...req, language, mode }),
+      });
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        return (await res.json()) as T;
+      }
+    } catch {
+      // Fall back to in-browser tree-sitter WASM runner when no API server is present
+    }
+  }
+  return browserFallback(language, req);
+}
+
 export async function runCompiledLangTrace(
   language: 'java' | 'cpp' | 'c' | 'csharp',
   req: Omit<PythonRunRequest, 'mode'>
 ): Promise<ExecutionTrace> {
-  try {
-    const res = await fetch('/api/lang/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...req, language, mode: 'trace' }),
-    });
-    if (!res.ok) {
-      throw new Error(`Execution server responded with HTTP ${res.status}`);
-    }
-    return (await res.json()) as ExecutionTrace;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : `Could not reach ${language} execution server.`;
-    return {
-      steps: [],
-      finalOutput: null,
-      stdout: [],
-      error: `${msg} Make sure the AlgoLens API server is running (npm run dev / npm start).`,
-      runtimeMs: 0,
-    };
-  }
+  return runCompiledViaBackendOrBrowser(language, 'trace', req, async (lang, r) => {
+    const { runBrowserCompiledTrace } = await import('./browserLangRunner');
+    return runBrowserCompiledTrace(lang, r);
+  });
 }
 
 export async function runCompiledLangTests(
   language: 'java' | 'cpp' | 'c' | 'csharp',
   req: Omit<PythonRunRequest, 'mode'>
 ): Promise<RunTestsResponse> {
-  try {
-    const res = await fetch('/api/lang/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...req, language, mode: 'tests' }),
-    });
-    if (!res.ok) {
-      throw new Error(`Execution server responded with HTTP ${res.status}`);
-    }
-    return (await res.json()) as RunTestsResponse;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : `Could not reach ${language} execution server.`;
-    return {
-      allPassed: false,
-      passedCount: 0,
-      totalCount: req.testCases.length,
-      results: [],
-      totalRuntimeMs: 0,
-      error: `${msg} Make sure the AlgoLens API server is running (npm run dev / npm start).`,
-    };
-  }
+  return runCompiledViaBackendOrBrowser(language, 'tests', req, async (lang, r) => {
+    const { runBrowserCompiledTests } = await import('./browserLangRunner');
+    return runBrowserCompiledTests(lang, r);
+  });
 }
 
 export async function runUnifiedTrace(
@@ -282,4 +293,3 @@ export async function runUnifiedTests(
   }
   return runCompiledLangTests(language, params);
 }
-
