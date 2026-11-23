@@ -78,8 +78,8 @@ export const RecursionTreeSvg: React.FC<RecursionTreeProps> = ({ tree }) => {
   const coords = new Map<number, { x: number; y: number; node: RecursionNodeModel }>();
   let nextLeafX = 0;
   let maxDepth = 0;
-  const stepX = 114;
-  const stepY = 64;
+  const stepX = 144;
+  const stepY = 66;
 
   function assign(id: number, depth: number): number {
     const node = tree.nodes[id];
@@ -101,13 +101,13 @@ export const RecursionTreeSvg: React.FC<RecursionTreeProps> = ({ tree }) => {
     assign(r, 0);
   }
 
-  const width = Math.max(380, nextLeafX + 40);
+  const width = Math.max(420, nextLeafX + 48);
   const height = Math.max(150, (maxDepth + 1) * stepY + 26);
 
   return (
-    <div className="rounded-xl border border-slate-800/90 bg-[#111622]/90 p-3.5 shadow-sm">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+    <div className="rounded-xl border border-[#222532] bg-[#11131a] px-5 py-4">
+      <div className="mb-2.5 flex items-center justify-between">
+        <span className="font-mono text-xs font-medium text-[#b4bccb]">
           Recursion Call Tree ({Object.keys(tree.nodes).length} calls)
         </span>
       </div>
@@ -121,9 +121,9 @@ export const RecursionTreeSvg: React.FC<RecursionTreeProps> = ({ tree }) => {
               return (
                 <path
                   key={`${node.callId}-${cid}`}
-                  d={`M ${x + 50} ${y + 18} C ${x + 50} ${(y + child.y) / 2}, ${child.x + 50} ${(y + child.y) / 2}, ${child.x + 50} ${child.y - 18}`}
+                  d={`M ${x + 68} ${y + 18} C ${x + 68} ${(y + child.y) / 2}, ${child.x + 68} ${(y + child.y) / 2}, ${child.x + 68} ${child.y - 18}`}
                   fill="none"
-                  stroke="#475569"
+                  stroke="#394056"
                   strokeWidth={1.5}
                 />
               );
@@ -133,31 +133,33 @@ export const RecursionTreeSvg: React.FC<RecursionTreeProps> = ({ tree }) => {
           {Array.from(coords.values()).map(({ x, y, node }) => {
             const isActive = node.status === 'active';
             const isReturned = node.status === 'returned';
-            const label = `${node.funcName}(${node.argsSummary})`;
-            const clipped = label.length > 16 ? label.slice(0, 15) + '…' : label;
+            const fullLabel = `${node.funcName}(${node.argsSummary})`;
+            const compactArgs = node.argsSummary || `${node.funcName}()`;
+            const rawLabel = fullLabel.length <= 20 ? fullLabel : compactArgs;
+            const clipped = rawLabel.length > 20 ? rawLabel.slice(0, 19) + '…' : rawLabel;
             return (
-              <g key={node.callId} transform={`translate(${x + 50}, ${y})`}>
+              <g key={node.callId} transform={`translate(${x + 68}, ${y})`}>
                 <rect
-                  x={-52}
-                  y={-17}
-                  width={104}
-                  height={34}
+                  x={-66}
+                  y={-18}
+                  width={132}
+                  height={36}
                   rx={8}
                   fill={
                     isActive
-                      ? 'rgba(99, 102, 241, 0.25)'
+                      ? 'rgba(124, 144, 246, 0.22)'
                       : isReturned
                         ? 'rgba(16, 185, 129, 0.14)'
                         : 'rgba(251, 191, 36, 0.12)'
                   }
-                  stroke={isActive ? '#818cf8' : isReturned ? '#34d399' : '#fbbf24'}
-                  strokeWidth={isActive ? 2 : 1.2}
+                  stroke={isActive ? '#8ea3ff' : isReturned ? '#34d399' : '#fbbf24'}
+                  strokeWidth={isActive ? 1.8 : 1.2}
                 />
                 <text
                   x={0}
                   y={node.returnDisplay ? -2 : 4}
                   textAnchor="middle"
-                  className="fill-slate-100 font-mono text-[10px]"
+                  className="fill-[#e4e8f4] font-mono text-[10px]"
                 >
                   {clipped}
                 </text>
@@ -168,7 +170,7 @@ export const RecursionTreeSvg: React.FC<RecursionTreeProps> = ({ tree }) => {
                     textAnchor="middle"
                     className="fill-emerald-300 font-mono text-[10px] font-semibold"
                   >
-                    → {node.returnDisplay.slice(0, 12)}
+                    → {node.returnDisplay.slice(0, 14)}
                   </text>
                 )}
               </g>

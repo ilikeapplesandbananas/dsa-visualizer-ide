@@ -46,6 +46,9 @@ describe('Pedagogical Step Narrator Verification', () => {
       'merge-intervals',
       'subarray-sum-equals-k',
       'house-robber',
+      'longest-substring-k-repeating',
+      'partition-labels',
+      'remove-duplicate-letters',
     ];
 
     for (const id of ids) {
@@ -72,6 +75,6 @@ describe('Pedagogical Step Narrator Verification', () => {
       expect(narrative.whyBody.length).toBeGreaterThan(0);
     }
 
-    expect(PROBLEMS.length).toBe(38);
+    expect(PROBLEMS.length).toBe(41);
   });
 });

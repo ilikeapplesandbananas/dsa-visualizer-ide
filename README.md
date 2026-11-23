@@ -2,7 +2,7 @@
 
 **Live Website:** **https://ilikeapplesandbananas.github.io/dsa-visualizer-ide/**
 
-An interactive, dual-surface coding IDE and step-by-step algorithm visualizer for LeetCode-style data structures & algorithms interview preparation across **6 programming languages** (`Python 3`, `JavaScript`, `Java`, `C++`, `C`, and `C#`) and **38 curated problems & sandboxes**.
+An interactive, dual-surface coding IDE and step-by-step algorithm visualizer for LeetCode-style data structures & algorithms interview preparation across **6 programming languages** (`Python 3`, `JavaScript`, `Java`, `C++`, `C`, and `C#`) and **41 curated problems & sandboxes**.
 
 Write your own solution or inspect clean optimal implementations, execute against sample/custom/hidden test cases, and scrub line-by-line through live synchronized animations of arrays, pointers, hash maps, trees, graphs/grids, heaps, stacks/queues, linked lists, intervals, and dynamic programming states—paired with mathematical callouts and a plain-English **"WHY THIS WORKS"** intuition card at every step.
 
@@ -46,9 +46,9 @@ Every supported language is genuinely executed and traced step-by-step (no hardc
 
 ---
 
-## Problem & Playground Catalog (38 Items)
+## Problem & Playground Catalog (41 Items)
 
-All 38 entries ship with starter templates and tested optimal implementations in all 6 languages (`Python 3`, `JavaScript`, `Java`, `C++`, `C`, `C#`):
+All 41 entries ship with starter templates and tested optimal implementations in all 6 languages (`Python 3`, `JavaScript`, `Java`, `C++`, `C`, `C#`):
 
 | # | Problem | Category | Difficulty | Interview Track / Scenario |
 | --- | --- | --- | --- | --- |
@@ -58,12 +58,15 @@ All 38 entries ship with starter templates and tested optimal implementations in
 | 11 | Container With Most Water | Two Pointers | Medium | — |
 | 15 | 3Sum | Two Pointers | Medium | — |
 | 42 | Trapping Rain Water | Two Pointers | Hard | — |
+| 763 | Partition Labels | Two Pointers | Medium | Greedy last-occurrence slice bounds |
 | 3 | Longest Substring Without Repeating Characters | Sliding Window | Medium | Kindle / CloudWatch Traffic Spike |
 | 121 | Best Time to Buy and Sell Stock | Sliding Window | Easy | — |
+| 395 | Longest Substring with At Least K Repeating Characters | Sliding Window | Medium | Divide & Conquer frequency split |
 | 2461 | Maximum Sum of Distinct Subarrays With Length K | Sliding Window | Medium | Kindle / CloudWatch Traffic Spike |
 | 704 | Binary Search | Binary Search | Easy | — |
 | 33 | Search in Rotated Sorted Array | Binary Search | Medium | — |
 | 20 | Valid Parentheses | Stack & Queue | Easy | — |
+| 316 | Remove Duplicate Letters | Stack & Queue | Medium | Monotonic stack greedy smallest string |
 | 739 | Daily Temperatures | Stack & Queue | Medium | — |
 | 21 | Merge Two Sorted Lists | Linked List | Easy | — |
 | 141 | Linked List Cycle | Linked List | Easy | — |

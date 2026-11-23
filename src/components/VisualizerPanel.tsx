@@ -271,6 +271,12 @@ export const VisualizerPanel: React.FC<VisualizerPanelProps> = ({
 
             <StackQueueVisualizer items={structures.stacksQueues} />
 
+            {problem.id === 'longest-substring-k-repeating' &&
+              structures.recursionTree &&
+              Object.keys(structures.recursionTree.nodes).length > 1 && (
+                <RecursionTreeSvg tree={structures.recursionTree} />
+              )}
+
             {/* Standalone Formula Card when primary problem has no Array card (e.g. Tree/Scalar DP/Graph) */}
             {structures.arrays.length === 0 && narrative.formula && (
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#222532] bg-[#11131a] px-5 py-3">

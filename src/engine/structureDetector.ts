@@ -268,6 +268,8 @@ const NON_POINTER_VARS = new Set([
   'rooms',
   'maxRooms',
   'max_rooms',
+  'returnSize',
+  'returnColumnSizes',
 ]);
 
 const KNOWN_POINTER_NAMES = new Set([
@@ -768,13 +770,13 @@ export function detectStructures(
     const isChanged = step.changedVars.includes(name);
 
     if (val.kind === 'primitive') {
-      // Render strings of length >= 2 as indexed char arrays if relevant
+      // Render active string variables as indexed character tiles (down to 1-char slices during recursion)
       if (
         val.type === 'string' &&
         typeof val.value === 'string' &&
-        val.value.length >= 2 &&
+        val.value.length >= 1 &&
         val.value.length <= 40 &&
-        /^(s|t|word|word1|word2|text|text1|text2|str|pattern|chars)$/i.test(name)
+        /^(s|t|word|word1|word2|text|text1|text2|str|pattern|chars|part)$/i.test(name)
       ) {
         const chars = Array.from(val.value);
         const ptrs: ArrayPointer[] = numericPointers

@@ -106,7 +106,11 @@ export const ArrayVisualizer: React.FC<ArrayVisualizerProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto pb-1">
-                <div className="inline-flex min-w-full justify-center gap-2.5 pt-5">
+                <div
+                  className={`inline-flex min-w-full justify-center pt-5 ${
+                    arr.items.length > 10 ? 'gap-1.5' : 'gap-2.5'
+                  }`}
+                >
                   {arr.items.map((item) => {
                     const cellPointers = arr.pointers.filter((p) => p.index === item.index);
                     const inWindow =
@@ -118,6 +122,7 @@ export const ArrayVisualizer: React.FC<ArrayVisualizerProps> = ({
                     );
                     const isPrimary = Boolean(primaryPtr) || (cellPointers.length > 0 && arr.pointers[0]?.index === item.index);
                     const hasAnyPointer = cellPointers.length > 0;
+                    const compact = arr.items.length > 10;
 
                     return (
                       <div
@@ -142,7 +147,11 @@ export const ArrayVisualizer: React.FC<ArrayVisualizerProps> = ({
 
                         {/* Matte Tile */}
                         <div
-                          className={`flex min-w-[54px] items-center justify-center rounded-lg border px-3 py-3 font-mono text-sm font-medium transition-all duration-150 ${
+                          className={`flex items-center justify-center rounded-lg border font-mono font-medium transition-all duration-150 ${
+                            compact
+                              ? 'min-w-[34px] px-2 py-2 text-xs'
+                              : 'min-w-[54px] px-3 py-3 text-sm'
+                          } ${
                             isPrimary
                               ? 'border-[#7c90f6] bg-[#1a2036] text-[#e6ebff] shadow-[0_0_0_1px_rgba(124,144,246,0.2)]'
                               : hasAnyPointer

@@ -1056,7 +1056,7 @@ ${bodyCode}
       return node.text.replace(/[uUlLfFdDmM]+$/, '');
     }
 
-    if (t === 'character_literal') {
+    if (t === 'character_literal' || t === 'char_literal') {
       return node.text;
     }
 
@@ -1397,7 +1397,7 @@ ${bodyCode}
 
   private isCharLike(node: Parser.SyntaxNode | null | undefined): boolean {
     if (!node) return false;
-    return node.type === 'character_literal';
+    return node.type === 'character_literal' || node.type === 'char_literal';
   }
 
   private isStringExpr(node: Parser.SyntaxNode | null | undefined): boolean {

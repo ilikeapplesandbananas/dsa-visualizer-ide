@@ -4,6 +4,7 @@ import { runJavaScriptTrace } from '../engine/jsRunner';
 import { detectStructures } from '../engine/structureDetector';
 import { buildInputPreviewStructures } from '../engine/inputPreview';
 import { executePython } from '../../server/pyRunner';
+import { narrateStep } from '../engine/stepNarrator';
 import type { ExecutionTrace } from '../types/trace';
 
 describe('Visualizer Structure Detection & Input Previews', () => {
@@ -153,6 +154,100 @@ describe('Visualizer Structure Detection & Input Previews', () => {
     expect(d.arrays[0].preferBars).toBe(true);
     expect(d.arrays[0].pointers.some((x) => x.name === 'left')).toBe(true);
     expect(d.arrays[0].pointers.some((x) => x.name === 'right')).toBe(true);
+  });
+
+  it('detects Counter map, active string, and Divide & Conquer Recursion Tree on #395 (Python)', async () => {
+    const p = getProblemById('longest-substring-k-repeating')!;
+    const trace = (await executePython({
+      mode: 'trace',
+      code: p.optimalCode.python,
+      entryFunction: p.entryFunction,
+      params: p.params,
+      returnType: p.returnType,
+      testCases: [p.testCases[1]],
+    })) as ExecutionTrace;
+
+    expect(trace.error).toBeNull();
+    const recursiveStepIdx = trace.steps.findIndex((s, idx) => {
+      const d = detectStructures(s, idx > 0 ? trace.steps[idx - 1] : null, trace.steps, idx, p.visualHint);
+      return (
+        d.arrays.some((a) => a.name === 's' && a.isString) &&
+        d.maps.some((m) => m.name === 'counts') &&
+        d.recursionTree !== null &&
+        Object.keys(d.recursionTree.nodes).length > 1
+      );
+    });
+    expect(recursiveStepIdx).toBeGreaterThan(-1);
+    const d = detectStructures(
+      trace.steps[recursiveStepIdx],
+      trace.steps[recursiveStepIdx - 1] ?? null,
+      trace.steps,
+      recursiveStepIdx,
+      p.visualHint
+    );
+    const nar = narrateStep(p, trace.steps[recursiveStepIdx], null, d, p.testCases[1], trace.finalOutput);
+    expect(nar.headline.length).toBeGreaterThan(0);
+    expect(nar.whyTitle.length).toBeGreaterThan(0);
+  });
+
+  it('detects window [left..right], last_seen map, and res partitions on #763 Partition Labels', () => {
+    const p = getProblemById('partition-labels')!;
+    const trace = runJavaScriptTrace({
+      code: p.optimalCode.javascript,
+      entryFunction: p.entryFunction,
+      params: p.params,
+      returnType: p.returnType,
+      testCase: p.testCases[0],
+    });
+
+    const partitionStepIdx = trace.steps.findIndex((s, idx) => {
+      const d = detectStructures(s, idx > 0 ? trace.steps[idx - 1] : null, trace.steps, idx, p.visualHint);
+      const sArr = d.arrays.find((a) => a.name === 's' && a.isString);
+      const resArr = d.arrays.find((a) => a.name === 'res');
+      return Boolean(sArr?.windowRange && resArr && resArr.items.length > 0 && d.maps.length > 0);
+    });
+    expect(partitionStepIdx).toBeGreaterThan(-1);
+    const d = detectStructures(
+      trace.steps[partitionStepIdx],
+      trace.steps[partitionStepIdx - 1] ?? null,
+      trace.steps,
+      partitionStepIdx,
+      p.visualHint
+    );
+    const nar = narrateStep(p, trace.steps[partitionStepIdx], null, d, p.testCases[0], trace.finalOutput);
+    expect(nar.formula).toBeDefined();
+    expect(nar.mapAnnotation?.keyLabel).toBe('CHAR');
+  });
+
+  it('detects monotonic stack, seen set, and last_index map on #316 Remove Duplicate Letters', () => {
+    const p = getProblemById('remove-duplicate-letters')!;
+    const trace = runJavaScriptTrace({
+      code: p.optimalCode.javascript,
+      entryFunction: p.entryFunction,
+      params: p.params,
+      returnType: p.returnType,
+      testCase: p.testCases[1],
+    });
+
+    const stackStepIdx = trace.steps.findIndex((s, idx) => {
+      const d = detectStructures(s, idx > 0 ? trace.steps[idx - 1] : null, trace.steps, idx, p.visualHint);
+      return (
+        d.arrays.some((a) => a.name === 's' && a.isString) &&
+        d.stacksQueues.some((sq) => sq.name === 'stack' && sq.kind === 'stack' && sq.items.length > 0) &&
+        d.sets.some((st) => st.name === 'seen' && st.items.length > 0) &&
+        d.maps.some((mp) => mp.name === 'lastIndex' && mp.entries.length > 0)
+      );
+    });
+    expect(stackStepIdx).toBeGreaterThan(-1);
+    const d = detectStructures(
+      trace.steps[stackStepIdx],
+      trace.steps[stackStepIdx - 1] ?? null,
+      trace.steps,
+      stackStepIdx,
+      p.visualHint
+    );
+    const nar = narrateStep(p, trace.steps[stackStepIdx], null, d, p.testCases[1], trace.finalOutput);
+    expect(nar.resultPreview?.label).toBe('stack');
   });
 });
 

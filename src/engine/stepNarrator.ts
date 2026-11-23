@@ -917,6 +917,246 @@ export function narrateStep(
       };
     }
 
+    case 'longest-substring-k-repeating': {
+      const sArr = findArray(structures, 's');
+      const countsMap = findMap(structures, 'counts', 'count', 'freq', 'mp');
+      const kVal = getScalarNum(structures, 'k') ?? (Number(testCase?.args?.[1]) || 0);
+      const sDisplay = getScalarDisplay(structures, 's')?.replace(/^"|"$/g, '') ?? sArr?.items.map((it) => it.display).join('') ?? '';
+      const ch = getScalarDisplay(structures, 'ch')?.replace(/^['"]|['"]$/g, '') ?? null;
+      const cnt = getScalarNum(structures, 'cnt');
+      const part = getScalarDisplay(structures, 'part');
+      const depth = step.callStack.length;
+
+      const splitEntry = countsMap?.entries.find((e) => Number(e.valueDisplay) < kVal);
+      const splitChar = (cnt !== null && cnt < kVal && ch ? ch : splitEntry?.key.replace(/^['"]|['"]$/g, '')) ?? null;
+      const splitCount = cnt !== null && cnt < kVal ? cnt : splitEntry ? Number(splitEntry.valueDisplay) : null;
+
+      const mapAnnotation: MapAnnotation = {
+        keyLabel: 'CHAR',
+        valueLabel: 'COUNT',
+        highlightKey: splitChar ?? undefined,
+        noteFormatter: (_mp, _key, val) => {
+          const n = Number(val);
+          return Number.isFinite(n) && kVal > 0 && n < kVal ? `< ${kVal} · split` : `>= ${kVal} ok`;
+        },
+      };
+
+      const isBaseTooShort = sDisplay.length < kVal;
+      const isValidWhole = countsMap && countsMap.entries.length > 0 && !splitEntry && !isBaseTooShort;
+
+      return {
+        headline: returnDisplay
+          ? `Branch returned ${returnDisplay}`
+          : splitChar
+            ? `Split around '${splitChar}'`
+            : isBaseTooShort
+              ? 'Subproblem shorter than k'
+              : countsMap
+                ? 'Verify character frequencies'
+                : 'Inspect current substring',
+        subtitle: `Divide & Conquer (depth ${depth}) · ${problem.timeComplexity}`,
+        mapAnnotation,
+        formula: splitChar && splitCount !== null
+          ? {
+              label: 'split rule',
+              expression: `count('${splitChar}') = ${splitCount} < k (${kVal})`,
+              badge: part ? `part = ${part}` : 'split & recurse',
+              badgeOk: false,
+            }
+          : isBaseTooShort
+            ? {
+                label: 'base case',
+                expression: `len("${sDisplay}") = ${sDisplay.length} < k (${kVal})`,
+                badge: 'return 0',
+                badgeOk: false,
+              }
+            : isValidWhole
+              ? {
+                  label: 'valid slice',
+                  expression: `all chars >= ${kVal} · len = ${sDisplay.length}`,
+                  badge: '✓ valid',
+                  badgeOk: true,
+                }
+              : {
+                  label: 'active slice',
+                  expression: `s = "${sDisplay}" · k = ${kVal}`,
+                  badge: `depth ${depth}`,
+                  badgeOk: true,
+                },
+        whyTitle: splitChar
+          ? `'${splitChar}' appears only ${splitCount} time(s) (< ${kVal}), so it cannot sit inside any valid substring.`
+          : isBaseTooShort
+            ? `"${sDisplay}" has length ${sDisplay.length} < k=${kVal}, so no character can repeat k times.`
+            : 'Every character inside this slice appears at least k times.',
+        whyBody:
+          'Splitting on any invalid character (< k occurrences) narrows the recursion by at least 1 unique letter, bounding recursion depth to at most 26 levels in O(26·N) = O(N) time.',
+        resultPreview: returnDisplay
+          ? { label: 'return', value: returnDisplay, note: depth <= 1 ? 'longest valid length' : `from "${sDisplay}"` }
+          : undefined,
+      };
+    }
+
+    case 'partition-labels': {
+      const sArr = findArray(structures, 's');
+      const lastMap = findMap(structures, 'last_seen', 'lastSeen', 'last', 'mp');
+      const resArr = findArray(structures, 'res', 'ans', 'result');
+      const left = getScalarNum(structures, 'left', 'start', 'l');
+      const right = getScalarNum(structures, 'right', 'end', 'r');
+      const i = getScalarNum(structures, 'i');
+      const rawCh = getScalarDisplay(structures, 'ch')?.replace(/^['"]|['"]$/g, '') ?? null;
+      const curCh = rawCh ?? (i !== null && sArr?.items[i] ? sArr.items[i].display : null);
+      const lastIdxEntry = curCh
+        ? lastMap?.entries.find((e) => e.key.replace(/^['"]|['"]$/g, '') === curCh)
+        : undefined;
+      const isCut = i !== null && right !== null && i === right && left !== null && right >= left;
+      const buildingMap = changed.has('last_seen') || changed.has('lastSeen') || (i !== null && right === null);
+
+      const mapAnnotation: MapAnnotation = {
+        keyLabel: 'CHAR',
+        valueLabel: 'LAST IDX',
+        highlightKey: curCh ?? undefined,
+        noteFormatter: (_mp, _key, val) => `last @ ${val}`,
+      };
+
+      const resPreview = resArr && resArr.items.length > 0 ? `[${resArr.items.map((it) => it.display).join(', ')}]` : null;
+
+      return {
+        headline: returnDisplay
+          ? 'All partitions closed'
+          : isCut
+            ? `Close partition [${left}..${right}]`
+            : buildingMap || (!lastMap || lastMap.entries.length === 0)
+              ? 'Record last occurrence per letter'
+              : 'Stretch partition boundary right',
+        subtitle: `Greedy Two Pointers · ${problem.timeComplexity}`,
+        mapAnnotation,
+        formula:
+          isCut && left !== null && right !== null
+            ? {
+                label: 'cut check',
+                expression: `i == right (${i} == ${right}) → size = ${right - left + 1}`,
+                badge: '✓ slice closed',
+                badgeOk: true,
+              }
+            : curCh && lastIdxEntry && right !== null
+              ? {
+                  label: 'extend right',
+                  expression: `right = max(${right}, last['${curCh}']=${lastIdxEntry.valueDisplay})`,
+                  badge: i !== null ? `i = ${i}` : undefined,
+                  badgeOk: false,
+                }
+              : curCh && lastIdxEntry
+                ? {
+                    label: 'record last',
+                    expression: `last_seen['${curCh}'] = ${lastIdxEntry.valueDisplay}`,
+                    badgeOk: true,
+                  }
+                : undefined,
+        whyTitle: isCut && left !== null && right !== null
+          ? `Every character inside [${left}..${right}] has its last occurrence <= ${right}.`
+          : 'A partition cannot end until it covers the final occurrence of every letter seen inside it.',
+        whyBody:
+          'Precomputing each character’s last index turns the partition check into a single linear scan: expand right = max(right, last[s[i]]) and cut whenever i catches up to right.',
+        resultPreview: returnDisplay
+          ? { label: 'return', value: returnDisplay, note: 'partition sizes' }
+          : resPreview
+            ? { label: 'partitions', value: resPreview, note: `${resArr?.items.length ?? 0} piece(s)` }
+            : undefined,
+      };
+    }
+
+    case 'remove-duplicate-letters': {
+      const sArr = findArray(structures, 's');
+      const lastMap = findMap(structures, 'last_index', 'lastIndex', 'last', 'mp');
+      const stackSq = structures.stacksQueues.find((sq) => sq.kind === 'stack') ?? structures.stacksQueues[0];
+      const stackArr = stackSq ? undefined : findArray(structures, 'stack', 'st', 'res');
+      const stackItems = stackSq?.items ?? stackArr?.items ?? [];
+      const seenSet = structures.sets[0];
+      const i = getScalarNum(structures, 'i');
+      const rawCh = getScalarDisplay(structures, 'ch', 'c')?.replace(/^['"]|['"]$/g, '') ?? null;
+      const curCh = rawCh ?? (i !== null && sArr?.items[i] ? sArr.items[i].display : null);
+
+      const topRaw = stackItems.length > 0 ? stackItems[stackItems.length - 1].display : null;
+      const topChar = topRaw ? topRaw.replace(/^['"]|['"]$/g, '') : null;
+      const topLastEntry = topChar
+        ? lastMap?.entries.find((e) => e.key.replace(/^['"]|['"]$/g, '') === topChar)
+        : undefined;
+      const topLastNum = topLastEntry ? Number(topLastEntry.valueDisplay) : null;
+      const isSeen = Boolean(
+        curCh && seenSet?.items.some((it) => it.display.replace(/^['"]|['"]$/g, '') === curCh)
+      );
+      const canPop = Boolean(
+        curCh &&
+          topChar &&
+          !isSeen &&
+          curCh < topChar &&
+          topLastNum !== null &&
+          i !== null &&
+          topLastNum > i
+      );
+
+      const stackStr = stackItems.map((it) => it.display.replace(/^['"]|['"]$/g, '')).join('');
+
+      const mapAnnotation: MapAnnotation = {
+        keyLabel: 'CHAR',
+        valueLabel: 'LAST IDX',
+        highlightKey: (canPop ? topChar : curCh) ?? undefined,
+        noteFormatter: (_mp, _key, val) => {
+          const idxVal = Number(val);
+          if (i !== null && Number.isFinite(idxVal)) {
+            return idxVal > i ? `appears again @ ${idxVal}` : `final copy @ ${idxVal}`;
+          }
+          return `last @ ${val}`;
+        },
+      };
+
+      return {
+        headline: returnDisplay
+          ? 'Lexicographically smallest ready'
+          : canPop
+            ? `Pop '${topChar}' before '${curCh}'`
+            : isSeen
+              ? `Skip duplicate '${curCh}'`
+              : curCh && !changed.has('last_index') && !changed.has('lastIndex')
+                ? `Keep '${curCh}' on stack`
+                : 'Index last positions & build stack',
+        subtitle: `Monotonic Stack + Seen Set · ${problem.timeComplexity}`,
+        mapAnnotation,
+        formula: canPop && curCh && topChar && topLastNum !== null && i !== null
+          ? {
+              label: 'greedy pop',
+              expression: `'${curCh}' < '${topChar}' & last['${topChar}']=${topLastNum} > i=${i}`,
+              badge: `pop '${topChar}'`,
+              badgeOk: true,
+            }
+          : isSeen && curCh
+            ? {
+                label: 'already used',
+                expression: `'${curCh}' ∈ seen`,
+                badge: 'skip duplicate',
+                badgeOk: false,
+              }
+            : curCh
+              ? {
+                  label: 'stack',
+                  expression: `top='${topChar ?? '∅'}' · push '${curCh}'`,
+                  badge: `unique = ${stackItems.length}`,
+                  badgeOk: true,
+                }
+              : undefined,
+        whyTitle: canPop && topChar && curCh
+          ? `Replacing '${topChar}' with smaller '${curCh}' is safe because '${topChar}' reappears later.`
+          : 'Maintain the smallest possible prefix while ensuring no last-remaining character is dropped.',
+        whyBody:
+          'Each unique letter enters the monotonic stack once when unseen; bigger stack tops are popped only while another copy exists at a later index (last_index[top] > i).',
+        resultPreview: returnDisplay
+          ? { label: 'return', value: returnDisplay, note: 'smallest subsequence' }
+          : stackStr
+            ? { label: 'stack', value: `"${stackStr}"`, note: `${seenSet?.items.length ?? stackStr.length} unique` }
+            : undefined,
+      };
+    }
+
     default: {
       // Dynamic fallback for playgrounds & custom user algorithms
       const primaryScalarChanges = structures.scalars

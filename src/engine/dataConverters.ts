@@ -250,6 +250,14 @@ export function convertArgs(rawArgs: unknown[], params: ProblemParam[]): unknown
 }
 
 export function toJsonOutput(val: unknown, returnType: ArgType | 'void'): unknown {
+  if (returnType === 'string' && Array.isArray(val)) {
+    let out = '';
+    for (const ch of val) {
+      if (ch === '\0' || ch === 0 || ch === null || ch === undefined) break;
+      out += String(ch);
+    }
+    return out;
+  }
   if (returnType === 'linkedList' || returnType === 'linkedListCycle') {
     return linkedListToArray((val as ListNode | null) ?? null);
   }

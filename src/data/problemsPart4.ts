@@ -1201,4 +1201,569 @@ public:
       { id: 'hr-3', label: 'Single House', args: [[5]], expected: 5, isHidden: true },
     ],
   },
+  {
+    id: 'longest-substring-k-repeating',
+    number: 395,
+    title: 'Longest Substring with At Least K Repeating Characters',
+    difficulty: 'Medium',
+    category: 'Sliding Window',
+    tags: ['Divide and Conquer', 'String', 'Hash Table', 'Sliding Window'],
+    entryFunction: 'longestSubstring',
+    params: [
+      { name: 's', type: 'string' },
+      { name: 'k', type: 'number' },
+    ],
+    returnType: 'number',
+    compareMode: 'exact',
+    description:
+      'Given a string `s` and an integer `k`, return the length of the longest substring of `s` such that the frequency of each character in this substring is greater than or equal to `k`.',
+    examples: [
+      { input: 's = "aaabb", k = 3', output: '3', explanation: 'Longest valid substring is "aaa", since "a" repeats 3 times.' },
+      { input: 's = "ababbc", k = 2', output: '5', explanation: 'Longest valid substring is "ababb", since "a" repeats 2 times and "b" repeats 3 times.' },
+    ],
+    constraints: ['1 <= s.length <= 10^4', 's consists of lowercase English letters', '1 <= k <= 10^5'],
+    hints: [
+      'Any character whose total count in `s` is strictly less than `k` can NEVER belong to any valid substring.',
+      'Count all characters with `Counter(s)`. If a character `ch` appears `< k` times, split `s` on `ch` and recursively take the `max` over all pieces.',
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    visualHint: {
+      primaryStructure: 'array',
+      highlightPointers: ['i', 'left', 'right'],
+      description: 'Character frequency map (`counts`), active substring slice, and Divide & Conquer recursion tree.',
+    },
+    starterCode: {
+      python: `from collections import Counter
+
+def longest_substring(s: str, k: int) -> int:
+    # Write your solution here
+    pass`,
+      javascript: `function longestSubstring(s, k) {
+  // Write your solution here
+  
+}`,
+      java: `class Solution {
+    public int longestSubstring(String s, int k) {
+        return 0;
+    }
+}`,
+      cpp: `class Solution {
+public:
+    int longestSubstring(string s, int k) {
+        return 0;
+    }
+};`,
+      c: `int longestSubstring(char* s, int k) {
+    return 0;
+}`,
+      csharp: `public class Solution {
+    public int LongestSubstring(string s, int k) {
+        return 0;
+    }
+}`,
+    },
+    optimalCode: {
+      python: `from collections import Counter
+
+def longest_substring(s: str, k: int) -> int:
+    if len(s) < k:
+        return 0
+    counts = Counter(s)
+    for ch, cnt in counts.items():
+        if cnt < k:
+            # Any character appearing < k times can never be in the answer—split on it
+            return max(longest_substring(part, k) for part in s.split(ch))
+    return len(s)`,
+      javascript: `function longestSubstring(s, k) {
+  if (s.length < k) return 0;
+  const counts = new Map();
+  for (const ch of s) {
+    counts.set(ch, (counts.get(ch) || 0) + 1);
+  }
+  for (const [ch, cnt] of counts.entries()) {
+    if (cnt < k) {
+      let best = 0;
+      for (const part of s.split(ch)) {
+        best = Math.max(best, longestSubstring(part, k));
+      }
+      return best;
+    }
+  }
+  return s.length;
+}`,
+      java: `class Solution {
+    public int longestSubstring(String s, int k) {
+        if (s.length() < k) return 0;
+        Map<Character, Integer> counts = new HashMap<>();
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            counts.put(ch, counts.getOrDefault(ch, 0) + 1);
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (counts.get(ch) < k) {
+                int best = 0;
+                int start = 0;
+                for (int j = 0; j <= s.length(); j++) {
+                    if (j == s.length() || s.charAt(j) == ch) {
+                        best = Math.max(best, longestSubstring(s.substring(start, j), k));
+                        start = j + 1;
+                    }
+                }
+                return best;
+            }
+        }
+        return s.length();
+    }
+}`,
+      cpp: `class Solution {
+public:
+    int longestSubstring(string s, int k) {
+        if (s.size() < k) return 0;
+        unordered_map<char, int> counts;
+        for (int i = 0; i < s.size(); i++) {
+            counts[s[i]]++;
+        }
+        for (int i = 0; i < s.size(); i++) {
+            char ch = s[i];
+            if (counts[ch] < k) {
+                int best = 0;
+                int start = 0;
+                for (int j = 0; j <= s.size(); j++) {
+                    if (j == s.size() || s[j] == ch) {
+                        best = max(best, longestSubstring(s.substr(start, j - start), k));
+                        start = j + 1;
+                    }
+                }
+                return best;
+            }
+        }
+        return s.size();
+    }
+};`,
+      c: `int helper395(char* s, int start, int end, int k) {
+    if (end - start < k) return 0;
+    int counts[26] = {0};
+    for (int i = start; i < end; i++) {
+        counts[s[i] - 'a']++;
+    }
+    for (int mid = start; mid < end; mid++) {
+        if (counts[s[mid] - 'a'] < k) {
+            int midNext = mid + 1;
+            while (midNext < end && counts[s[midNext] - 'a'] < k) {
+                midNext++;
+            }
+            int leftBest = helper395(s, start, mid, k);
+            int rightBest = helper395(s, midNext, end, k);
+            return leftBest > rightBest ? leftBest : rightBest;
+        }
+    }
+    return end - start;
+}
+
+int longestSubstring(char* s, int k) {
+    return helper395(s, 0, strlen(s), k);
+}`,
+      csharp: `public class Solution {
+    public int LongestSubstring(string s, int k) {
+        if (s.Length < k) return 0;
+        var counts = new Dictionary<char, int>();
+        for (int i = 0; i < s.Length; i++) {
+            char ch = s[i];
+            counts[ch] = counts.GetValueOrDefault(ch, 0) + 1;
+        }
+        for (int i = 0; i < s.Length; i++) {
+            char ch = s[i];
+            if (counts[ch] < k) {
+                int best = 0;
+                int start = 0;
+                for (int j = 0; j <= s.Length; j++) {
+                    if (j == s.Length || s[j] == ch) {
+                        best = Math.Max(best, LongestSubstring(s.Substring(start, j - start), k));
+                        start = j + 1;
+                    }
+                }
+                return best;
+            }
+        }
+        return s.Length;
+    }
+}`,
+    },
+    testCases: [
+      { id: 'lsk-1', label: 'Case 1', args: ['aaabb', 3], expected: 3 },
+      { id: 'lsk-2', label: 'Case 2', args: ['ababbc', 2], expected: 5 },
+      { id: 'lsk-3', label: 'No Valid Slice', args: ['ababacb', 3], expected: 0, isHidden: true },
+      { id: 'lsk-4', label: 'Entire String Valid', args: ['aaabbb', 3], expected: 6, isHidden: true },
+    ],
+  },
+  {
+    id: 'partition-labels',
+    number: 763,
+    title: 'Partition Labels',
+    difficulty: 'Medium',
+    category: 'Two Pointers',
+    tags: ['Greedy', 'Two Pointers', 'Hash Table', 'String'],
+    entryFunction: 'partitionLabels',
+    params: [{ name: 's', type: 'string' }],
+    returnType: 'number[]',
+    compareMode: 'exact',
+    description:
+      'You are given a string `s`. We want to partition the string into as many parts as possible so that each letter appears in at most one part.\n\nReturn a list of integers representing the size of these parts.',
+    examples: [
+      {
+        input: 's = "ababcbacadefegdehijhklij"',
+        output: '[9, 7, 8]',
+        explanation: 'Partitions are "ababcbaca", "defegde", "hijhklij".',
+      },
+      { input: 's = "eccbbbbdec"', output: '[10]' },
+    ],
+    constraints: ['1 <= s.length <= 500', 's consists of lowercase English letters'],
+    hints: [
+      'Record the last index where every character appears: `last_seen[ch]`.',
+      'Sweep `i` from left to right extending `right = max(right, last_seen[ch])`. When `i == right`, close the piece `[left..right]` and set `left = i + 1`.',
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    visualHint: {
+      primaryStructure: 'array',
+      highlightPointers: ['left', 'right', 'i'],
+      description: 'Active partition slice `[left..right]`, `last_seen` lookup map, and resulting piece lengths `res`.',
+    },
+    starterCode: {
+      python: `def partition_labels(s: str) -> list[int]:
+    # Write your solution here
+    pass`,
+      javascript: `function partitionLabels(s) {
+  // Write your solution here
+  
+}`,
+      java: `class Solution {
+    public List<Integer> partitionLabels(String s) {
+        return new ArrayList<>();
+    }
+}`,
+      cpp: `class Solution {
+public:
+    vector<int> partitionLabels(string s) {
+        return {};
+    }
+};`,
+      c: `int* partitionLabels(char* s, int* returnSize) {
+    *returnSize = 0;
+    return NULL;
+}`,
+      csharp: `public class Solution {
+    public IList<int> PartitionLabels(string s) {
+        return new List<int>();
+    }
+}`,
+    },
+    optimalCode: {
+      python: `def partition_labels(s: str) -> list[int]:
+    last_seen = {ch: i for i, ch in enumerate(s)}
+    res = []
+    left = right = 0
+    for i, ch in enumerate(s):
+        right = max(right, last_seen[ch])
+        if i == right:
+            res.append(right - left + 1)
+            left = i + 1
+    return res`,
+      javascript: `function partitionLabels(s) {
+  const lastSeen = new Map();
+  for (let i = 0; i < s.length; i++) {
+    lastSeen.set(s[i], i);
+  }
+  const res = [];
+  let left = 0;
+  let right = 0;
+  for (let i = 0; i < s.length; i++) {
+    right = Math.max(right, lastSeen.get(s[i]));
+    if (i === right) {
+      res.push(right - left + 1);
+      left = i + 1;
+    }
+  }
+  return res;
+}`,
+      java: `class Solution {
+    public List<Integer> partitionLabels(String s) {
+        Map<Character, Integer> lastSeen = new HashMap<>();
+        for (int i = 0; i < s.length(); i++) {
+            lastSeen.put(s.charAt(i), i);
+        }
+        List<Integer> res = new ArrayList<>();
+        int left = 0;
+        int right = 0;
+        for (int i = 0; i < s.length(); i++) {
+            right = Math.max(right, lastSeen.get(s.charAt(i)));
+            if (i == right) {
+                res.add(right - left + 1);
+                left = i + 1;
+            }
+        }
+        return res;
+    }
+}`,
+      cpp: `class Solution {
+public:
+    vector<int> partitionLabels(string s) {
+        unordered_map<char, int> lastSeen;
+        for (int i = 0; i < s.size(); i++) {
+            lastSeen[s[i]] = i;
+        }
+        vector<int> res;
+        int left = 0;
+        int right = 0;
+        for (int i = 0; i < s.size(); i++) {
+            right = max(right, lastSeen[s[i]]);
+            if (i == right) {
+                res.push_back(right - left + 1);
+                left = i + 1;
+            }
+        }
+        return res;
+    }
+};`,
+      c: `int* partitionLabels(char* s, int* returnSize) {
+    int n = strlen(s);
+    int lastSeen[26] = {0};
+    for (int i = 0; i < n; i++) {
+        lastSeen[s[i] - 'a'] = i;
+    }
+    int* res = (int*)malloc(n * sizeof(int));
+    int count = 0;
+    int left = 0;
+    int right = 0;
+    for (int i = 0; i < n; i++) {
+        int end = lastSeen[s[i] - 'a'];
+        if (end > right) right = end;
+        if (i == right) {
+            res[count++] = right - left + 1;
+            left = i + 1;
+        }
+    }
+    *returnSize = count;
+    return res;
+}`,
+      csharp: `public class Solution {
+    public IList<int> PartitionLabels(string s) {
+        var lastSeen = new Dictionary<char, int>();
+        for (int i = 0; i < s.Length; i++) {
+            lastSeen[s[i]] = i;
+        }
+        var res = new List<int>();
+        int left = 0;
+        int right = 0;
+        for (int i = 0; i < s.Length; i++) {
+            right = Math.Max(right, lastSeen[s[i]]);
+            if (i == right) {
+                res.Add(right - left + 1);
+                left = i + 1;
+            }
+        }
+        return res;
+    }
+}`,
+    },
+    testCases: [
+      { id: 'pl-1', label: 'Case 1', args: ['ababcbacadefegdehijhklij'], expected: [9, 7, 8] },
+      { id: 'pl-2', label: 'Case 2', args: ['eccbbbbdec'], expected: [10] },
+      { id: 'pl-3', label: 'Lead Single Char', args: ['caedbdedda'], expected: [1, 9], isHidden: true },
+    ],
+  },
+  {
+    id: 'remove-duplicate-letters',
+    number: 316,
+    title: 'Remove Duplicate Letters',
+    difficulty: 'Medium',
+    category: 'Stack & Queue',
+    tags: ['Stack', 'Monotonic Stack', 'Greedy', 'String'],
+    entryFunction: 'removeDuplicateLetters',
+    params: [{ name: 's', type: 'string' }],
+    returnType: 'string',
+    compareMode: 'exact',
+    description:
+      'Given a string `s`, remove duplicate letters so that every letter appears once and only once. You must make sure your result is the smallest in lexicographical order among all possible results.',
+    examples: [
+      { input: 's = "bcabc"', output: '"abc"' },
+      { input: 's = "cbacdcbc"', output: '"acdb"' },
+    ],
+    constraints: ['1 <= s.length <= 10^4', 's consists of lowercase English letters'],
+    hints: [
+      'Track `last_index[ch]` for every character so you know whether a character on the stack still appears later.',
+      'Maintain a monotonic increasing `stack` of characters with a `seen` set: skip `ch` if already in `seen`; otherwise pop larger stack tops while `last_index[stack[-1]] > i`.',
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    visualHint: {
+      primaryStructure: 'stack',
+      highlightPointers: ['i'],
+      description: 'Monotonic increasing character `stack`, `seen` set, and `last_index` map.',
+    },
+    starterCode: {
+      python: `def remove_duplicate_letters(s: str) -> str:
+    # Write your solution here
+    pass`,
+      javascript: `function removeDuplicateLetters(s) {
+  // Write your solution here
+  
+}`,
+      java: `class Solution {
+    public String removeDuplicateLetters(String s) {
+        return "";
+    }
+}`,
+      cpp: `class Solution {
+public:
+    string removeDuplicateLetters(string s) {
+        return "";
+    }
+};`,
+      c: `char* removeDuplicateLetters(char* s) {
+    return "";
+}`,
+      csharp: `public class Solution {
+    public string RemoveDuplicateLetters(string s) {
+        return "";
+    }
+}`,
+    },
+    optimalCode: {
+      python: `def remove_duplicate_letters(s: str) -> str:
+    last_index = {ch: i for i, ch in enumerate(s)}
+    stack = []
+    seen = set()
+    for i, ch in enumerate(s):
+        if ch in seen:
+            continue
+        # Pop bigger letters if they appear again later in the string
+        while stack and ch < stack[-1] and last_index[stack[-1]] > i:
+            seen.remove(stack.pop())
+        stack.append(ch)
+        seen.add(ch)
+    return "".join(stack)`,
+      javascript: `function removeDuplicateLetters(s) {
+  const lastIndex = new Map();
+  for (let i = 0; i < s.length; i++) {
+    lastIndex.set(s[i], i);
+  }
+  const stack = [];
+  const seen = new Set();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) continue;
+    while (
+      stack.length > 0 &&
+      ch < stack[stack.length - 1] &&
+      lastIndex.get(stack[stack.length - 1]) > i
+    ) {
+      seen.delete(stack.pop());
+    }
+    stack.push(ch);
+    seen.add(ch);
+  }
+  return stack.join('');
+}`,
+      java: `class Solution {
+    public String removeDuplicateLetters(String s) {
+        Map<Character, Integer> lastIndex = new HashMap<>();
+        for (int i = 0; i < s.length(); i++) {
+            lastIndex.put(s.charAt(i), i);
+        }
+        Stack<Character> stack = new Stack<>();
+        Set<Character> seen = new HashSet<>();
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (seen.contains(ch)) continue;
+            while (!stack.isEmpty() && ch < stack.peek() && lastIndex.get(stack.peek()) > i) {
+                seen.remove(stack.pop());
+            }
+            stack.push(ch);
+            seen.add(ch);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (char c : stack) {
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+}`,
+      cpp: `class Solution {
+public:
+    string removeDuplicateLetters(string s) {
+        unordered_map<char, int> lastIndex;
+        for (int i = 0; i < s.size(); i++) {
+            lastIndex[s[i]] = i;
+        }
+        vector<char> stack;
+        unordered_set<char> seen;
+        for (int i = 0; i < s.size(); i++) {
+            char ch = s[i];
+            if (seen.count(ch)) continue;
+            while (!stack.empty() && ch < stack.back() && lastIndex[stack.back()] > i) {
+                seen.erase(stack.back());
+                stack.pop_back();
+            }
+            stack.push_back(ch);
+            seen.insert(ch);
+        }
+        string res = "";
+        for (char c : stack) res += c;
+        return res;
+    }
+};`,
+      c: `char* removeDuplicateLetters(char* s) {
+    int n = strlen(s);
+    int lastIndex[26] = {0};
+    int seen[26] = {0};
+    for (int i = 0; i < n; i++) {
+        lastIndex[s[i] - 'a'] = i;
+    }
+    char* stack = (char*)calloc(27, sizeof(char));
+    int top = 0;
+    for (int i = 0; i < n; i++) {
+        char ch = s[i];
+        if (seen[ch - 'a']) continue;
+        while (top > 0 && ch < stack[top - 1] && lastIndex[stack[top - 1] - 'a'] > i) {
+            seen[stack[top - 1] - 'a'] = 0;
+            top--;
+        }
+        stack[top++] = ch;
+        seen[ch - 'a'] = 1;
+    }
+    stack[top] = '\\0';
+    return stack;
+}`,
+      csharp: `public class Solution {
+    public string RemoveDuplicateLetters(string s) {
+        var lastIndex = new Dictionary<char, int>();
+        for (int i = 0; i < s.Length; i++) {
+            lastIndex[s[i]] = i;
+        }
+        var stack = new List<char>();
+        var seen = new HashSet<char>();
+        for (int i = 0; i < s.Length; i++) {
+            char ch = s[i];
+            if (seen.Contains(ch)) continue;
+            while (stack.Count > 0 && ch < stack[stack.Count - 1] && lastIndex[stack[stack.Count - 1]] > i) {
+                seen.Remove(stack[stack.Count - 1]);
+                stack.RemoveAt(stack.Count - 1);
+            }
+            stack.Add(ch);
+            seen.Add(ch);
+        }
+        return string.Join("", stack);
+    }
+}`,
+    },
+    testCases: [
+      { id: 'rdl-1', label: 'Case 1', args: ['bcabc'], expected: 'abc' },
+      { id: 'rdl-2', label: 'Case 2', args: ['cbacdcbc'], expected: 'acdb' },
+      { id: 'rdl-3', label: 'Mixed Dups', args: ['ecbacba'], expected: 'eacb', isHidden: true },
+      { id: 'rdl-4', label: 'Simple Greedy', args: ['abacb'], expected: 'abc', isHidden: true },
+    ],
+  },
 ];
